@@ -23,7 +23,7 @@ async function setupPlugin({ config, global, storage }) {
     }
 }
 
-async function fetchAllOrders(shopifyStore, defaultHeaders) {
+async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
     let orders = []
 
     let orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=1`
@@ -31,9 +31,18 @@ async function fetchAllOrders(shopifyStore, defaultHeaders) {
     let hasMoreOrders = true
 
     while (hasMoreOrders) {
+
+        if (await cache.get('snoozing', true)) {
+            continue
+        }
         const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
 
         orderJson = await orderResponse.json()
+
+        if (orderResponse.status === '429') {
+            await cache.set('snoozing', true, 2)
+        }
+
         orderApiUrl = getNextPageUrl(orderResponse.headers)
 
         if (orderApiUrl === null) {
@@ -48,7 +57,7 @@ async function fetchAllOrders(shopifyStore, defaultHeaders) {
 }
 
 async function runEveryMinute({ cache, storage, global, config }) {
-    const orders = await fetchAllOrders(config.shopifyStore, global.defaultHeaders)
+    const orders = await fetchAllOrders(config.shopifyStore, global.defaultHeaders, cache)
 
     for (const order of orders) {
         const orderRecordExists = await storage.get(`shopify-order-${order.id}`)
@@ -82,7 +91,6 @@ async function runEveryMinute({ cache, storage, global, config }) {
         }
         posthog.capture(orderRecordExists ? 'Updated Shopify Order' : 'Created Shopify Order', {
             distinct_id: customerEmail || order.id,
-            ...order,
             ...orderToSave,
         })
     }
