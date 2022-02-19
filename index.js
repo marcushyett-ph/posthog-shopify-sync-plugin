@@ -31,7 +31,6 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
     let hasMoreOrders = true
 
     while (hasMoreOrders) {
-
         if (await cache.get('snoozing', true)) {
             continue
         }
