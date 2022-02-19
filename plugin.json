@@ -1,0 +1,21 @@
+{
+    "name": "Posthog Shopify Plugin",
+    "description": "Sync Shopify Events to PostHog",
+    "url": "https://github.com/sreeo/posthog-shopify-sync-plugin",
+    "main": "index.js",
+    "config": [
+        {
+            "key": "shopifyStore",
+            "name": "Shopify Store",
+            "type": "string",
+            "required": true
+        },
+        {
+            "key": "shopifyAccessToken",
+            "name": "Shopify Access Token",
+            "type": "string",
+            "required": true,
+            "secret": true
+        }
+    ]
+}

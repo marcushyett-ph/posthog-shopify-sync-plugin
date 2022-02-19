@@ -1,0 +1,22 @@
+{
+    "name": "posthog-shopify-sync-plugin",
+    "version": "0.0.1",
+    "description": "Sync Shopify Events to PostHog",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/sreeo/posthog-shopify-sync-plugin.git"
+    },
+    "author": "Sreeraj Rajan <rajan.sreeraj@yahoo.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/sreeo/posthog-shopify-sync-plugin/issues"
+    },
+    "homepage": "https://github.com/sreeo/posthog-shopify-sync-plugin#readme",
+    "scripts": {
+        "test": "jest"
+    },
+    "devDependencies": {
+        "@posthog/plugin-scaffold": "^0.2.9",
+        "jest": "^26.6.3"
+    }
+}
