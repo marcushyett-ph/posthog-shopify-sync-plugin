@@ -35,11 +35,12 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
         if (await cache.get('snoozing', true)) {
             continue
         }
-        const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
 
+        const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
         orderJson = await orderResponse.json()
 
-        if (orderResponse.status === '429') {
+        // if rate-limited, wait for 2 seconds for the quota to be replenished # https://shopify.dev/api/admin-rest#rate_limits
+        if (orderResponse.status.toString() === '429') {
             await cache.set('snoozing', true, 2)
         }
 
