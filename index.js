@@ -52,14 +52,15 @@ async function runEveryMinute({ cache, storage, global, config }) {
 
     for (const order of orders) {
         const orderRecordExists = await storage.get(`shopify-order-${order.id}`)
-        const customerRecordExists = await storage.get(`shopify-customer-${order.customer.email}`)
+        const customerEmail = order.customer?.email
+        const customerRecordExists = await storage.get(`shopify-customer-${customerEmail}`)
 
         if (!orderRecordExists) {
             await storage.set(`shopify-order-${order.id}`, true)
         }
 
         if (!customerRecordExists) {
-            await storage.set(`shopify-customer-${order.customer.email}`, true)
+            await storage.set(`shopify-customer-${customerEmail}`, true)
         }
 
         const orderToSave = {
@@ -73,13 +74,16 @@ async function runEveryMinute({ cache, storage, global, config }) {
             // description: order.description
         }
 
-        posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
-            distinct_id: order.customer.email,
-            ...order.customer,
-        })
-
+        if (customerEmail !== undefined) {
+            orderToSave.customer_email = customerEmail
+            posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
+                distinct_id: order.customer.email,
+                ...order.customer,
+            })
+        }
         posthog.capture(orderRecordExists ? 'Updated Shopify Order' : 'Created Shopify Order', {
             distinct_id: order.id,
+            ...order,
             ...orderToSave,
         })
     }
