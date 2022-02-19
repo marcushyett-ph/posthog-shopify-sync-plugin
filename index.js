@@ -75,14 +75,13 @@ async function runEveryMinute({ cache, storage, global, config }) {
         }
 
         if (customerEmail !== undefined) {
-            orderToSave.customer_email = customerEmail
             posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
                 distinct_id: order.customer.email,
                 ...order.customer,
             })
         }
         posthog.capture(orderRecordExists ? 'Updated Shopify Order' : 'Created Shopify Order', {
-            distinct_id: order.id,
+            distinct_id: customerEmail || order.id,
             ...order,
             ...orderToSave,
         })
