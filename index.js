@@ -26,7 +26,7 @@ async function setupPlugin({ config, global, storage }) {
 async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, storage) {
 
     if (orderApiUrl == null) {
-        orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=1`
+        orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=250`
     }
 
     let hasMoreOrders = true
