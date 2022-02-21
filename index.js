@@ -23,10 +23,17 @@ async function setupPlugin({ config, global, storage }) {
     }
 }
 
-async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
-    let orders = []
+async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, storage) {
+    let index = 0
 
-    let orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=250`
+    if (orderApiUrl == null) {
+        orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=1`
+        console.log('fresh start')
+    } else {
+        index = await storage.get('index')
+        console.log("restarting from previous iteration " + index)
+        console.log(orderApiUrl)
+    }
 
     let hasMoreOrders = true
 
@@ -34,7 +41,7 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
         if (await cache.get('snoozing', true)) {
             continue
         }
-
+        await storage.set('index', index)
         const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
         orderJson = await orderResponse.json()
 
@@ -44,21 +51,24 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, cache) {
         }
 
         orderApiUrl = getNextPageUrl(orderResponse.headers)
+        await storage.set('current-url', orderApiUrl)
 
         if (orderApiUrl === null) {
             hasMoreOrders = false
         }
 
-        const newOrders = orderJson.orders
-        orders = [...orders, ...newOrders]
+        const newOrders = orderJson?.orders || []
+        await capture(newOrders, storage)
+        console.log("FETCHED " + index)
+        index++
     }
 
-    return orders
+    await storage.set('current-url', null)
+    await storage.set('index', 0)
+    console.log('resetting storage values')
 }
 
-async function runEveryMinute({ cache, storage, global, config }) {
-    const orders = await fetchAllOrders(config.shopifyStore, global.defaultHeaders, cache)
-
+async function capture(orders, storage) {
     for (const order of orders) {
         const orderRecordExists = await storage.get(`shopify-order-${order.id}`)
         const customerEmail = order.customer?.email
@@ -94,6 +104,11 @@ async function runEveryMinute({ cache, storage, global, config }) {
             ...orderToSave,
         })
     }
+}
+
+async function runEveryMinute({ cache, storage, global, config }) {
+    currentUrl = await storage.get('current-url')
+    await fetchAllOrders(config.shopifyStore, global.defaultHeaders, currentUrl, cache, storage)
 }
 
 function getNextPageUrl(headers) {
