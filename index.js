@@ -35,7 +35,7 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
             continue
         }
         const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
-        orderJson = await orderResponse.json()
+        const orderJson = await orderResponse.json()
 
         // if rate-limited, wait for 2 seconds for the quota to be replenished # https://shopify.dev/api/admin-rest#rate_limits
         if (orderResponse.status.toString() === '429') {
@@ -95,7 +95,7 @@ async function capture(orders, storage) {
 }
 
 async function runEveryMinute({ cache, storage, global, config }) {
-    currentUrl = await storage.get('current-url')
+    const currentUrl = await storage.get('current-url')
     await fetchAllOrders(config.shopifyStore, global.defaultHeaders, currentUrl, cache, storage)
 }
 
@@ -104,11 +104,11 @@ function getNextPageUrl(headers) {
         let linkHeader = headers.get('link')
         const paginationInfo = linkHeader.split(',')
 
-        for (i = 0; i < paginationInfo.length; i++) {
+        for (let i = 0; i < paginationInfo.length; i++) {
             let paginatedLinkBody = paginationInfo[i].split(';')
 
             if (paginatedLinkBody[1].trim() === 'rel="next"') {
-                orderApiUrl = paginatedLinkBody[0].substring(
+                const orderApiUrl = paginatedLinkBody[0].substring(
                     paginatedLinkBody[0].indexOf('<') + 1,
                     paginatedLinkBody[0].lastIndexOf('>')
                 )
