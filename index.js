@@ -24,7 +24,6 @@ async function setupPlugin({ config, global, storage }) {
 }
 
 async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, storage) {
-
     if (orderApiUrl == null) {
         orderApiUrl = `https://${shopifyStore}.myshopify.com/admin/api/2022-01/orders.json?limit=250`
     }
@@ -54,7 +53,8 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
         await capture(newOrders, storage)
     }
 
-    await storage.set('current-url', null)}
+    await storage.set('current-url', null)
+}
 
 async function capture(orders, storage) {
     for (const order of orders) {
