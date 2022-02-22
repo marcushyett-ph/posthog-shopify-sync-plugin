@@ -100,7 +100,7 @@ async function runEveryMinute({ cache, storage, global, config }) {
 }
 
 function getNextPageUrl(headers) {
-    if (headers.has('link')) {
+    if (headers?.has('link')) {
         let linkHeader = headers.get('link')
         const paginationInfo = linkHeader.split(',')
 
@@ -135,4 +135,10 @@ async function fetchWithRetry(url, options = {}, method = 'GET', isRetry = false
 
 function statusOk(res) {
     return String(res.status)[0] === '2'
+}
+
+module.exports = {
+    setupPlugin,
+    getNextPageUrl,
+    runEveryMinute
 }
