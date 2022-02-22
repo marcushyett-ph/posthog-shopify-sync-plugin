@@ -1,16 +1,16 @@
-const { getMeta, resetMeta, createCache } = require('@posthog/plugin-scaffold/test/utils.js')
-const { setupPlugin, runEveryMinute, getNextPageUrl } = require('../index')
-const defaultRes = require('./res.json')
+const { getMeta, resetMeta } = require('@posthog/plugin-scaffold/test/utils.js')
+const { setupPlugin, getNextPageUrl, fetchAllOrders } = require('../index')
+const defaultResponse = require('./res.json')
 
 global.fetch = jest.fn(async () => ({
-    json: async () => defaultRes,
-    status: 200
+    json: async () => defaultResponse,
+    status: 200,
 }))
 
 global.posthog = {}
 
 global.posthog['capture'] = jest.fn(async (eventName, props) => ({
-    json: async () => ({ event: eventName, ...props })
+    json: async () => ({ event: eventName, ...props }),
 }))
 
 beforeEach(() => {
@@ -19,8 +19,8 @@ beforeEach(() => {
     resetMeta({
         config: {
             shopifyStore: 'posthogStore',
-            shopifyAccessToken: 'supersecretaccesstoken'
-        }
+            shopifyAccessToken: 'supersecretaccesstoken',
+        },
     })
 })
 
@@ -32,33 +32,37 @@ test('setupPlugin with a token', async () => {
 
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledWith('https://posthogStore.myshopify.com/admin/api/2022-01/orders.json?limit=1', {
-        headers: { 'X-Shopify-Access-Token': 'supersecretaccesstoken' }, "method": "GET",
+        headers: { 'X-Shopify-Access-Token': 'supersecretaccesstoken' },
+        method: 'GET',
     })
 })
 
+test('test fetchAllOrders with only page response', async () => {
+    const meta = getMeta()
 
+    // await setupPlugin(meta)
+    await fetchAllOrders(meta.config.shopifyStore, meta.global.headers, null, meta.cache, meta.storage)
 
-// test('', async () => {
-//     await runEveryMinute(getMeta())
-//     expect(fetch).toHaveBeenCalledTimes(1)
-//     expect(fetch).toHaveBeenCalledWith(
-//         'https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=posthoghq',
-//         {
-//             method: 'GET'
-//         }
-//     )
+    expect(fetch).toHaveBeenCalledTimes(1)
 
-//     expect(posthog.capture).toHaveBeenCalledTimes(1)
-//     expect(posthog.capture).toHaveBeenCalledWith('twitter_followers', { follower_count: 1402 })
-// })
+    expect(fetch).toHaveBeenCalledWith('https://posthogStore.myshopify.com/admin/api/2022-01/orders.json?limit=250', {
+        method: 'GET',
+    })
 
+    expect(posthog.capture).toHaveBeenCalledTimes(2)
+})
 
 // getNextPageUrl tests
 test('getNextPageUrl with header that has link attribute', () => {
     let headers = new Map()
-    headers.set('link', '<https://***.myshopify.com/admin/api/2022-01/orders.json?limit=10&page_info=eyJsYXN0X2lkIjo0MzkwNTQ4OTMwNzE3LCJsYXN0X3ZhbHVlIjoiMjAyMi0wMi0yMSAxMjo1MzoyMy4wMDY3MTkiLCJkaXJlY3Rpb24iOiJuZXh0In0>; rel="next"')
+    headers.set(
+        'link',
+        '<https://***.myshopify.com/admin/api/2022-01/orders.json?limit=10&page_info=eyJsYXN0X2lkIjo0MzkwNTQ4OTMwNzE3LCJsYXN0X3ZhbHVlIjoiMjAyMi0wMi0yMSAxMjo1MzoyMy4wMDY3MTkiLCJkaXJlY3Rpb24iOiJuZXh0In0>; rel="next"'
+    )
     nextPageUrl = getNextPageUrl(headers)
-    expect(nextPageUrl).toEqual('https://***.myshopify.com/admin/api/2022-01/orders.json?limit=10&page_info=eyJsYXN0X2lkIjo0MzkwNTQ4OTMwNzE3LCJsYXN0X3ZhbHVlIjoiMjAyMi0wMi0yMSAxMjo1MzoyMy4wMDY3MTkiLCJkaXJlY3Rpb24iOiJuZXh0In0')
+    expect(nextPageUrl).toEqual(
+        'https://***.myshopify.com/admin/api/2022-01/orders.json?limit=10&page_info=eyJsYXN0X2lkIjo0MzkwNTQ4OTMwNzE3LCJsYXN0X3ZhbHVlIjoiMjAyMi0wMi0yMSAxMjo1MzoyMy4wMDY3MTkiLCJkaXJlY3Rpb24iOiJuZXh0In0'
+    )
 })
 
 test('getNextPageUrl with header that has no link attribute', () => {

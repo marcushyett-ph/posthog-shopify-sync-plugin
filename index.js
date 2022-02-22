@@ -31,9 +31,12 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     let hasMoreOrders = true
 
     while (hasMoreOrders) {
-        if (await cache.get('snoozing', true)) {
+        const isSnoozing = await cache.get('snoozing')
+
+        if (isSnoozing) {
             continue
         }
+
         const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
         const orderJson = await orderResponse.json()
 
@@ -140,5 +143,6 @@ function statusOk(res) {
 module.exports = {
     setupPlugin,
     getNextPageUrl,
-    runEveryMinute
+    runEveryMinute,
+    fetchAllOrders,
 }
