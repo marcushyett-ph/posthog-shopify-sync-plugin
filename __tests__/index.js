@@ -92,6 +92,33 @@ test('test fetchAllOrders with 2 page response', async () => {
     expect(posthog.capture).toHaveBeenCalledTimes(6)
 })
 
+test('test fetchAllOrders with error response', async () => {
+    const meta = getMeta()
+
+    await setupPlugin(meta)
+    let headers = new Map()
+    headers.set(
+        'link',
+        '<https://posthogStore.myshopify.com/admin/api/2022-01/orders.json?limit=10&page_info=eyJsYXN0X2lkIjo0MzkwNTQ4OTMwNzE3LCJsYXN0X3ZhbHVlIjoiMjAyMi0wMi0yMSAxMjo1MzoyMy4wMDY3MTkiLCJkaXJlY3Rpb24iOiJuZXh0In0>; rel="next"'
+    )
+
+    fetch.mockImplementation(() => {
+        throw new Error()
+    })
+
+    try {
+        await fetchAllOrders(meta.config.shopifyStore, meta.global.headers, null, meta.cache, meta.storage)
+    } catch (e) {}
+
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledWith('https://posthogStore.myshopify.com/admin/api/2022-01/orders.json?limit=250', {
+        method: 'GET',
+    })
+    expect(await meta.storage.get('current-url')).toBe(
+        'https://posthogStore.myshopify.com/admin/api/2022-01/orders.json?limit=250'
+    )
+})
+
 // getNextPageUrl tests
 test('getNextPageUrl with header that has link attribute', () => {
     let headers = new Map()

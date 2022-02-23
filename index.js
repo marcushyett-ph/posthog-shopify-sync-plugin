@@ -29,8 +29,8 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     }
 
     let hasMoreOrders = true
-
     index = 0
+    await storage.set('current-url', orderApiUrl)
 
     while (hasMoreOrders) {
         const isSnoozing = await cache.get('snoozing')
@@ -59,7 +59,6 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     }
 
     await storage.set('current-url', null)
-    
 }
 
 async function capture(orders, storage) {
