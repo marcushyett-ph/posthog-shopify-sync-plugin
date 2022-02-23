@@ -30,10 +30,15 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
 
     let hasMoreOrders = true
 
+    index = 0
+
     while (hasMoreOrders) {
-        if (await cache.get('snoozing', true)) {
+        const isSnoozing = await cache.get('snoozing')
+
+        if (isSnoozing) {
             continue
         }
+
         const orderResponse = await fetchWithRetry(orderApiUrl, defaultHeaders)
         const orderJson = await orderResponse.json()
 
@@ -54,6 +59,7 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     }
 
     await storage.set('current-url', null)
+    
 }
 
 async function capture(orders, storage) {
@@ -100,7 +106,7 @@ async function runEveryMinute({ cache, storage, global, config }) {
 }
 
 function getNextPageUrl(headers) {
-    if (headers.has('link')) {
+    if (headers?.has('link')) {
         let linkHeader = headers.get('link')
         const paginationInfo = linkHeader.split(',')
 
@@ -135,4 +141,11 @@ async function fetchWithRetry(url, options = {}, method = 'GET', isRetry = false
 
 function statusOk(res) {
     return String(res.status)[0] === '2'
+}
+
+module.exports = {
+    setupPlugin,
+    getNextPageUrl,
+    runEveryMinute,
+    fetchAllOrders,
 }
