@@ -29,11 +29,11 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     }
 
     let hasMoreOrders = true
-    index = 0
+    index = 0 // where is this used?
     await storage.set('current-url', orderApiUrl)
 
     while (hasMoreOrders) {
-        const isSnoozing = await cache.get('snoozing')
+        const isSnoozing = await cache.get('snoozing', null)
 
         if (isSnoozing) {
             continue
@@ -79,7 +79,7 @@ async function capture(orders, storage) {
             order_number: order.order_number,
             currency: order.currency,
             transaction_amount: order.current_total_price,
-            // status: order.status,
+            // status: order.status, let's remove comments if we're not using them
             order_status_url: order.order_status_url,
             financial_status: order.financial_status,
             created_at: order.created_at,
@@ -87,11 +87,14 @@ async function capture(orders, storage) {
         }
 
         if (customerEmail !== undefined) {
+            // to update a user, shouldn't we send properties in $set? 
             posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
                 distinct_id: order.customer.email,
                 ...order.customer,
             })
         }
+
+        // an order will be listed as created when we first see it, how helpful is it to have a separate event for updated?
         posthog.capture(orderRecordExists ? 'Updated Shopify Order' : 'Created Shopify Order', {
             distinct_id: customerEmail || order.id,
             ...orderToSave,
@@ -100,13 +103,16 @@ async function capture(orders, storage) {
 }
 
 async function runEveryMinute({ cache, storage, global, config }) {
-    const currentUrl = await storage.get('current-url')
+    const currentUrl = await storage.get('current-url', null)
     await fetchAllOrders(config.shopifyStore, global.defaultHeaders, currentUrl, cache, storage)
 }
 
 function getNextPageUrl(headers) {
+    // this is very confusing to follow.
+    // 1. Is this really how shopify paginates things? 
+    // 2. If the answer to #1 is yes, could you give an example of what `linkHeader` looks like so we can understand what this code does?
     if (headers?.has('link')) {
-        let linkHeader = headers.get('link')
+        const linkHeader = headers.get('link') 
         const paginationInfo = linkHeader.split(',')
 
         for (let i = 0; i < paginationInfo.length; i++) {
