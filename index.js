@@ -29,11 +29,10 @@ async function fetchAllOrders(shopifyStore, defaultHeaders, orderApiUrl, cache, 
     }
 
     let hasMoreOrders = true
-    index = 0
     await storage.set('current-url', orderApiUrl)
 
     while (hasMoreOrders) {
-        const isSnoozing = await cache.get('snoozing')
+        const isSnoozing = await cache.get('snoozing', null)
 
         if (isSnoozing) {
             continue
@@ -79,34 +78,37 @@ async function capture(orders, storage) {
             order_number: order.order_number,
             currency: order.currency,
             transaction_amount: order.current_total_price,
-            // status: order.status,
             order_status_url: order.order_status_url,
             financial_status: order.financial_status,
             created_at: order.created_at,
-            // description: order.description
         }
 
         if (customerEmail !== undefined) {
             posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
                 distinct_id: order.customer.email,
-                ...order.customer,
+                $set : {
+                    ...order.customer
+                }
             })
         }
-        posthog.capture(orderRecordExists ? 'Updated Shopify Order' : 'Created Shopify Order', {
-            distinct_id: customerEmail || order.id,
-            ...orderToSave,
-        })
+
+        if (!orderRecordExists) {
+            posthog.capture('Created Shopify Order', {
+                distinct_id: customerEmail || order.id,
+                ...orderToSave,
+            })
+        }
     }
 }
 
 async function runEveryMinute({ cache, storage, global, config }) {
-    const currentUrl = await storage.get('current-url')
+    const currentUrl = await storage.get('current-url', null)
     await fetchAllOrders(config.shopifyStore, global.defaultHeaders, currentUrl, cache, storage)
 }
 
 function getNextPageUrl(headers) {
     if (headers?.has('link')) {
-        let linkHeader = headers.get('link')
+        const linkHeader = headers.get('link')
         const paginationInfo = linkHeader.split(',')
 
         for (let i = 0; i < paginationInfo.length; i++) {
