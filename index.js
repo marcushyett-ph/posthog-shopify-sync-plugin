@@ -84,6 +84,7 @@ async function capture(orders, storage) {
         }
 
         if (customerEmail !== undefined) {
+            // to update a user, shouldn't we send properties in $set? 
             posthog.capture(customerRecordExists ? 'Updated Shopify Customer' : 'Created Shopify Customer', {
                 distinct_id: order.customer.email,
                 $set : {
@@ -107,6 +108,9 @@ async function runEveryMinute({ cache, storage, global, config }) {
 }
 
 function getNextPageUrl(headers) {
+    // this is very confusing to follow.
+    // 1. Is this really how shopify paginates things? 
+    // 2. If the answer to #1 is yes, could you give an example of what `linkHeader` looks like so we can understand what this code does?
     if (headers?.has('link')) {
         const linkHeader = headers.get('link')
         const paginationInfo = linkHeader.split(',')
