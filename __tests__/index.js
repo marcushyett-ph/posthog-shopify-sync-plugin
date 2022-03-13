@@ -89,7 +89,7 @@ test('test fetchAllOrders with 2 page response', async () => {
         }
     )
 
-    expect(posthog.capture).toHaveBeenCalledTimes(6)
+    expect(posthog.capture).toHaveBeenCalledTimes(5)
 })
 
 test('test fetchAllOrders with error response', async () => {
